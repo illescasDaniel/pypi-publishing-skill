@@ -22,10 +22,12 @@ Action versions are pinned by commit SHA with the version in a comment. Keep it 
 
 ## 1. Pick the name
 
-Check it is free **before** writing anything that uses it. PyPI treats `-`, `_` and `.` as the same and ignores case.
+Check it is free **before** writing anything that uses it. PyPI treats `-`, `_` and `.` as the same and ignores case,
+and it **rejects names "too similar" to an existing project**, which in practice means the name with all separators
+removed also has to be free (`agent-crew` is refused because `agentcrew` exists). Check both forms:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://pypi.org/pypi/<name>/json   # 404 = free, 200 = taken
+for n in <name> <name-without-separators>; do curl -s -o /dev/null -w "$n %{http_code}\n" https://pypi.org/pypi/$n/json; done   # 404 = free, 200 = taken
 ```
 
 Prefer a name that says what the project does and does not imitate a vendor's brand (`claude-*`, `openai-*`).
