@@ -13,7 +13,7 @@ Cursor and any other agent that loads skills.
 |---|---|
 | **Name** | Check the PyPI name is free before anything uses it |
 | **Prepare** | Complete `pyproject.toml` metadata, license, `.gitignore`; make sure runtime files are bundled in the wheel; add the templates; smoke-test the built wheel |
-| **One-time setup** | You add a trusted publisher on PyPI and create a protected `pypi` environment on GitHub. The agent tells you exactly what to enter |
+| **One-time setup** | You add the trusted publisher on PyPI. The agent creates/verifies the protected GitHub `pypi` environment through authenticated `gh`; otherwise it gives manual steps |
 | **Release** | Bump the version and changelog, tag, then run the release workflow (after your go-ahead) and approve the environment prompt |
 
 The release workflow (`release.yml`) is manual on purpose. It checks out the tag, **refuses to continue if the tag does
@@ -47,6 +47,7 @@ Copy the `skills/pypi-publishing` folder into your agent's skills directory.
 
 | | Project (shared with your team) | All your projects |
 |---|---|---|
+| Codex | `.codex/skills/pypi-publishing/` | `~/.codex/skills/pypi-publishing/` |
 | Claude Code | `.claude/skills/pypi-publishing/` | `~/.claude/skills/pypi-publishing/` |
 | Cursor | `.cursor/skills/pypi-publishing/` | `~/.cursor/skills/pypi-publishing/` |
 

@@ -49,23 +49,39 @@ A free name can still be taken before the first upload: register the trusted pub
 uv build && uvx --from dist/*.whl <command> --help
 ```
 
-## 3. One-time setup (the user does this; it needs their accounts)
+## 3. One-time setup
 
-1. **PyPI → Your projects → Publishing → add a (pending) trusted publisher**: owner, repository, workflow file name
-   `release.yml`, environment `pypi`. For a name that does not exist yet, use the *pending* publisher form.
-2. **GitHub → repository → Settings → Environments → New environment `pypi`**. Add a required reviewer (the owner)
-   so every release needs a click.
-3. Push to GitHub. Wait for CI to be green on `main`.
+1. **PyPI trusted publisher:** owner, repository, workflow file name `release.yml`, environment `pypi`.
+   For an unpublished name, use the *pending* publisher form. GitHub CLI cannot register a PyPI publisher:
+   give the user the exact values and the PyPI publishing URL, unless they have already configured it.
+2. **GitHub environment:** perform this step automatically when `gh` is installed, authenticated and has permission
+   to manage the target repository. An authorized request to set up publishing includes this environment setup;
+   do not send the user to the website solely because the operation uses their GitHub account.
+   - Check `gh auth status` and resolve the actual owner/repository from `gh repo view --json nameWithOwner`.
+     Work only on the repository in the user's task; creating a repository still requires task authorization.
+   - Read `gh api repos/OWNER/REPO/environments/pypi`. If it is absent (404), create it with
+     `gh api --method PUT repos/OWNER/REPO/environments/pypi --input <json-file>`.
+     Include a `reviewers` array with the authorized owner as a required reviewer (`type: User`, numeric GitHub
+     user `id`). For a user-owned repository, resolve the owner with `gh api users/OWNER`; do not assume the
+     currently authenticated user owns an organization repository. Ask which reviewer to use if unresolved.
+   - Preserve existing reviewers, wait timers and deployment policies. Do not blindly PUT a minimal payload
+     over an existing protected environment. Add a required reviewer only if missing; read back and verify
+     the resulting protection rules. Do not weaken protection settings or approve a deployment during setup.
+   - If `gh` is missing, unauthenticated or lacks permission, explain the actual limitation and give the manual
+     fallback: GitHub repository Settings → Environments → `pypi`, with the owner as required reviewer.
+     Include the real repository URL. If GitHub's plan does not support reviewers, report that limitation;
+     do not claim the environment is protected.
+3. Push when authorized and wait for CI to be green on `main`.
 
-Tell the user exactly these steps with their real owner, repo and name filled in. Do not try to do them yourself.
+Report completed setup and only the remaining manual steps. Never ask the user to repeat setup already verified.
 
 ## 4. Cut a release
 
 1. Bump `version` in `pyproject.toml`; add the `## [x.y.z] - date` section to `CHANGELOG.md`; refresh the lockfile
    (`uv lock`). Commit and merge to `main`; CI must be green.
 2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-3. **Ask the user** before running the workflow: it publishes to a public index and PyPI versions cannot be reused or
-   truly deleted. Then `gh workflow run release.yml -f tag=vX.Y.Z` (or Actions → Release → Run workflow), and approve
+3. Obtain explicit authorization for that version before running the workflow: it publishes to a public index and
+   PyPI versions cannot be reused or truly deleted. Existing authorization in the task counts; do not ask again. Then `gh workflow run release.yml -f tag=vX.Y.Z` (or Actions → Release → Run workflow), and approve
    the `pypi` environment prompt.
 4. Verify: `uvx <package>==X.Y.Z --help` from a clean directory, and check the GitHub release exists with the notes.
 
